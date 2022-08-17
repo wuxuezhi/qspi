@@ -1,0 +1,31 @@
+# Introduction
+本文档是QSPI 的设计说明文档。
+# Signal Description
+ | direction|name | description|
+ |:---:|:---:|:----------:|
+ |input| clk|时钟|
+ |input| rst_n|异步复位，低有效|
+ |input|i_qspi_vld| QSPI接收数据输入有效，并将其转换为QSPI信号|
+ |output|i_qspi_rdy|QSPI准备接收数据|
+ |input|i_qspi_dat| QSPI 接收的数据。既可以作为数据存在，也可以作为Dummy信息。|
+ |input|i_qspi_continue| QSPI 接收完本次数据后将会等待下一个数据。|
+ |input|i_qspi_dummy|QSPI 将发送dummy信号，dummy时钟数由i_qspi_dat决定|
+ |input|i_qspi_type|本次SPI传输的类型。2'b00: standard spi; 2'b01: dual spi; 2'b10 :quad spi。仅当处于standard SPI模式时，才支持双工传输|
+ |input|qspi_param_mod|qspi 模式。|
+ |input|qspi_param_div|qspi 分频系数|
+ |output|o_qspi_sck| QSPI 时钟|
+ |output|o_qspi_cs_n| QSPI 片选，低有效|
+ 
+# QSPI Config Register (bias + 0x0)
+|Bit Field| Name | Description| Default |Property|
+|:-------:|:----:|:----------:|:-------:|:------:|
+| 7 : 6   |Qmode |qspi mode.高位为CHOL，低位CHPA |0| R/W|
+| 5       |dummy |接下来传给QSPI的数据是dummy|0| R/W |
+| 4 : 3   |Qtype | QSPI 传输类型； 00: standard spi; 01: dual spi; 10: quad spi;|0| R/W |
+| 2       |duxen |开启双工模式。仅仅在standard spi模式下有效。开启后，向QSPI写一字节数据的同时，QSPI会读一个字节回来。软件需要将这个字节读取。| 0 | R/W |
+| 1       |Reserved | | 0| R/W |
+|0        |Reserved| | 0| R/W|
+
+# QSPI  Data Register(bias + 0x1)
+
+<!-- # QSPI Write Data Register(bias + 0x2) -->
