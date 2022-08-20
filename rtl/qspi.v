@@ -1,4 +1,4 @@
-module qspi #()(
+module qspi (
     input               i_qspi_req_vld,
     output              i_qspi_req_rdy,
     input               i_qspi_req_read,
@@ -14,7 +14,7 @@ module qspi #()(
     input [3:0]         qspi_param_div,
     input               qspi_param_duxen,
     
-
+    output              qspi_busy,
 
     output              qspi_sck,
     output              qspi_dq0_en,
@@ -115,7 +115,7 @@ module qspi #()(
     dfflr #(11) sck_div_count_dfflr(sck_div_count_ena, sck_div_count_nxt, sck_div_count_r, clk, rst_n);
 
 
-
+    
 
     // -------------------------------------------------------
     // -- qspi state
@@ -127,6 +127,8 @@ module qspi #()(
     wire [1:0]  qspi_state_r;
     wire [1:0]  qspi_state_nxt;
     wire        qspi_state_ena;
+
+    
 
     dfflr #(2)  qspi_state_dfflr(qspi_state_ena, qspi_state_nxt, qspi_state_r, clk, rst_n);
 
@@ -352,7 +354,7 @@ module qspi #()(
     
     assign      qspi_dq3_en             =   qspi_state_is_transfer & (qspi_buf_type_r == 2'b10);
 
-
+    assign      qspi_busy               =   (qspi_state_r != QSPI_STATE_IDLE);
 
     
 
