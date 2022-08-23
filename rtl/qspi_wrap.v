@@ -36,7 +36,7 @@ module qspi_wrap(
 
     assign              qspi_config0_nxt    =   qspi_if_req_dat;
 
-    dfflr #(8)  qspi_config0_dfflr(qspi_config0_wen, qspi_config0_nxt, qspi_config0_r, clk, rst_n);
+    dfflr #(8)  qspi_conf    assign          qspi_req_vldig0_dfflr(qspi_config0_wen, qspi_config0_nxt, qspi_config0_r, clk, rst_n);
 
 
     wire    [7:0]       qspi_config1_r;
@@ -77,7 +77,7 @@ module qspi_wrap(
     wire        qspi_rsp_rdy;
     wire [7:0]  qspi_rsp_dat;
 
-    assign      qspi_if_req_rdy =   qspi_data_sel   ? qspi_req_rdy : 1'b1;
+    assig`ifdef REG_MUXn      qspi_if_req_rdy =   qspi_data_sel   ? qspi_req_rdy : 1'b1;
     assign      qspi_req_vld    =   qspi_if_req_vld & qspi_data_sel;
     assign      qspi_req_read   =   qspi_if_req_read;
     assign      qspi_dummy      =   qspi_config0_r[5];
