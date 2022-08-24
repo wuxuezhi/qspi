@@ -38,34 +38,6 @@ module qspi (
 
     wire    qspi_i_hsked    =   i_qspi_req_vld  & i_qspi_req_rdy;
 
-    // wire    qspi_cpol       =   qspi_param_mode[1];
-    // wire    qspi_cpha       =   qspi_param_mode[0];
-
-
-
-    // //CPOL & CPHA
-    // localparam  POSEDGE     =   1'b0;
-    // localparam  NEGEDGE     =   1'b1;
-
-
-
-
-
-
-
-
-    // wire    qpsi_buf_vld_r;
-    // wire    qspi_buf_vld_nxt;
-    // wire    qspi_buf_vld_set;
-    // wire    qspi_buf_vld_clr;
-    // wire    qspi_buf_vld_ena;
-    
-
-
-    // assign  qspi_buf_vld_set    =   qspi_i_hsked;
-    // assign  qspi_buf_vld_nxt    =   qspi_buf_vld_set | ~qspi_buf_vld_clr;
-    // assign  qspi_buf_vld_ena    =   qspi_buf_vld_set | qspi_buf_vld_clr;
-    // dfflr #(1) qspi_buf_vld_dfflr(qspi_buf_vld_ena, qspi_buf_vld_nxt, qpsi_buf_vld_r, clk, rst_n);
 
     wire [7:0]  qspi_buf_dat_r;
     wire [7:0]  qspi_buf_dat_nxt;

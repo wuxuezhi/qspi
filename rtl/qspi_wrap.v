@@ -92,7 +92,7 @@ module qspi_wrap(
     wire        qspi_rsp_rdy;
     wire [7:0]  qspi_rsp_dat;
 
-    assign      qspi_if_req_rdy =   qspi_data_sel   ? qspi_req_rdy : 1'b1;
+    assign      qspi_if_req_rdy =   qspi_req_rdy;
     assign      qspi_req_vld    =   qspi_if_req_vld & qspi_data_sel;
     assign      qspi_req_read   =   qspi_if_req_read;
     assign      qspi_dummy      =   qspi_config0_r[5];
