@@ -50,8 +50,13 @@ module spi_flash #(
     input           spi_flash_sdo_i,
     output          spi_flash_sdi_en,
     output          spi_flash_sdi_o,
-    input           spi_flash_sdi_i
+    input           spi_flash_sdi_i,
+    output          spi_flash_sck,
+
+    output          spi_flash_busy
 );
+
+
 
 
     wire            clk                 =   spi_flash_aclk;
@@ -66,12 +71,16 @@ module spi_flash #(
 
     wire [IDW-1:0]  spi_flash_buf_awid_r;
     wire [IDW-1:0]  spi_flash_buf_awid_nxt;
+
+    assign          spi_flash_buf_awid_nxt  =   spi_flash_awid;
     
     dfflr #(IDW)    awid_dfflr(spi_flash_aw_hsked, spi_flash_buf_awid_nxt, spi_flash_buf_awid_r, clk, rst_n);
 
 
     wire [IDW-1:0]  spi_flash_buf_arid_r;
     wire [IDW-1:0]  spi_flash_buf_arid_nxt;
+
+    assign          spi_flash_buf_arid_nxt  =   spi_flash_arid;
     
     dfflr #(IDW)    arid_dfflr(spi_flash_ar_hsked, spi_flash_buf_arid_nxt, spi_flash_buf_arid_r, clk, rst_n);
 
@@ -110,14 +119,44 @@ module spi_flash #(
 
     
 
-`ifdef  RESP_AT_ONCE
+
+
+    wire            spi_flash_buf_ar_vld_r;
+    wire            spi_flash_buf_ar_vld_nxt;
+    wire            spi_flash_buf_ar_vld_set;
+    wire            spi_flash_buf_ar_vld_clr;
+    wire            spi_flash_buf_ar_vld_ena;
+
+    assign          spi_flash_buf_ar_vld_set    =   spi_flash_ar_hsked;
+    assign          spi_flash_buf_ar_vld_clr    =   spi_flash_r_hsked;
+    assign          spi_flash_buf_ar_vld_nxt    =   spi_flash_buf_ar_vld_set | ~spi_flash_buf_ar_vld_clr;
+    assign          spi_flash_buf_ar_vld_ena    =   spi_flash_buf_ar_vld_set | spi_flash_buf_ar_vld_clr;
+    dfflr #(1)  spi_flash_buf_ar_vld_dfflr(spi_flash_buf_ar_vld_ena, spi_flash_buf_ar_vld_nxt, spi_flash_buf_ar_vld_r, clk, rst_n);
+
+
+    assign          spi_flash_busy      =   ~spi_flash_buf_aw_vld_r | ~spi_flash_buf_b_vld_r;
+
+    assign          spi_flash_bid               =   spi_flash_buf_awid_r;
+    assign          spi_flash_rid               =   spi_flash_buf_arid_r;
+
+// `ifdef  RESP_AT_ONCE
     assign          spi_flash_wready    =   spi_flash_buf_aw_vld_r;
+    assign          spi_flash_bresp     =   2'b00;
     assign          spi_flash_awready   =   ~spi_flash_buf_aw_vld_r & ~spi_flash_buf_b_vld_r;
     assign          spi_flash_bvalid    =   spi_flash_buf_b_vld_r;
     assign          spi_flash_rlast     =   1'b1;
+    assign          spi_flash_arready   =   ~spi_flash_buf_ar_vld_r;
+    assign          spi_flash_rvalid    =   spi_flash_buf_ar_vld_r;
+    assign          spi_flash_rdata     =   {DW{1'b1}};
+    assign          spi_flash_rresp     =   2'b00;
 
-`endif
+// `endif
 
-
-
+    assign          spi_flash_csen      =   4'b1111;
+    assign          spi_flash_csn_o     =   4'b1111;
+    assign          spi_flash_sdo_en    =   1'b1;
+    assign          spi_flash_sdo_o     =   1'b1;
+    assign          spi_flash_sdi_en    =   1'b1;
+    assign          spi_flash_sdi_o     =   1'b1;
 endmodule
+

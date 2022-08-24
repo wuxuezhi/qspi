@@ -30,7 +30,7 @@
 |Bit Field| Name | Description| Default |Property|
 |:-------:|:----:|:----------:|:-------:|:------:|
 |7:4| Qclk_div| QSPI时钟分频系数，独立于spre/spr|0|R/W|
-|3| Qcs |QSPI 片选信号输出值       |0| R/W|
+|3| Qcs |QSPI 片选信号输出值       |1| R/W|
 |2| Qbusy| QSPI 处于繁忙中|        0|R|
 |1:0| Reserved| - | - |-|
 

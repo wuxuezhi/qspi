@@ -9,6 +9,8 @@ module qspi_wrap(
     input               qspi_if_rsp_rdy,
     output  [7:0]       qspi_if_rsp_dat,
 
+    output              qspi_if_switch_qspi,
+
     output              qspi_if_sck,
     output              qspi_if_csn,
     output              qspi_if_dq0_en,
@@ -36,7 +38,7 @@ module qspi_wrap(
 
     assign              qspi_config0_nxt    =   qspi_if_req_dat;
 
-    dfflr #(8)  qspi_conf    assign          qspi_req_vldig0_dfflr(qspi_config0_wen, qspi_config0_nxt, qspi_config0_r, clk, rst_n);
+    dfflr #(8)  qspi_config0_dfflr(qspi_config0_wen, qspi_config0_nxt, qspi_config0_r, clk, rst_n);
 
 
     wire    [7:0]       qspi_config1_r;
@@ -45,14 +47,21 @@ module qspi_wrap(
 
     assign              qspi_config1_nxt    =   qspi_if_req_dat;
 
-    dfflr #(8)  qspi_config1_dfflr(qspi_config1_wen, qspi_config1_nxt, qspi_config1_r, clk, rst_n);
+    dfflr #(7)  qspi_config1_dfflr(qspi_config1_wen, {qspi_config1_nxt[7:4], qspi_config1_nxt[2:0]}, {qspi_config1_r[7:4], qspi_config1_r[2:0]}, clk, rst_n);
+    dfflr #(1)  qspi_config1_dfflrs(qspi_config1_wen, qspi_config1_nxt[3], qspi_config1_r[3], clk, rst_n);
 
+    wire    [7:0]       qspi_switch_r;
+    wire    [7:0]       qspi_switch_nxt;
+    wire                qspi_switch_wen;
 
+    assign              qspi_switch_nxt     =   qspi_if_req_dat;
 
+    dfflr #(8)  qspi_switch_dfflr(qspi_switch_wen, qspi_switch_nxt, qspi_switch_r, clk, rst_n);
 
     wire    qspi_config0_sel    =   (qspi_if_req_addr == 3'b000);
     wire    qspi_config1_sel    =   (qspi_if_req_addr == 3'b001);
     wire    qspi_data_sel       =   (qspi_if_req_addr == 3'b010);
+    wire    qspi_switch_sel     =   (qspi_if_req_addr == 3'b011);
 
     wire    qspi_if_req_hsked   =   qspi_if_req_vld & qspi_if_req_rdy;
 
@@ -62,6 +71,12 @@ module qspi_wrap(
     assign  qspi_config0_wen    =   qspi_config0_sel & qspi_if_req_hsked;
 
     assign  qspi_config1_wen    =   qspi_config1_sel & qspi_if_req_hsked;
+
+    assign  qspi_switch_wen     =   qspi_switch_sel  & qspi_if_req_hsked;
+
+
+
+    assign  qspi_if_switch_qspi =   qspi_switch_r[0];
 
     //qspi engine
     wire        qspi_req_vld;
@@ -77,7 +92,7 @@ module qspi_wrap(
     wire        qspi_rsp_rdy;
     wire [7:0]  qspi_rsp_dat;
 
-    assig`ifdef REG_MUXn      qspi_if_req_rdy =   qspi_data_sel   ? qspi_req_rdy : 1'b1;
+    assign      qspi_if_req_rdy =   qspi_data_sel   ? qspi_req_rdy : 1'b1;
     assign      qspi_req_vld    =   qspi_if_req_vld & qspi_data_sel;
     assign      qspi_req_read   =   qspi_if_req_read;
     assign      qspi_dummy      =   qspi_config0_r[5];

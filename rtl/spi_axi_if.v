@@ -44,6 +44,8 @@ module spi_axi_if #(
     input               spi_if_rready,
 
     //spi signal
+    output              spi_if_sck,
+
     output[3:0]         spi_if_csn_en,
     output[3:0]         spi_if_csn_o,
     input [3:0]         spi_if_csn_i,
@@ -62,62 +64,6 @@ module spi_axi_if #(
     wire                clk                 =   aclk;//alias
     wire                rst_n               =   aresetn;
 
-    // wire                spi_switch_r;
-    // wire                spi_switch_nxt;
-    // wire                spi_switch_ena;
-    
-    // dfflr #(1)  spi_switch_dfflr(spi_switch_ena, spi_switch_nxt, spi_switch_r, clk, rst_n);
-
-    // localparam  AW_CHNL_W   =   IDW + 8 + 3 + 2 + 1 + 3 + AW;
-
-    // wire [AW_CHNL_W-1:0]i_axi_aw_chnl       =
-    //     {
-    //         spi_if_awid,
-    //         spi_if_awlen,
-    //         spi_if_awsize,
-    //         spi_if_awburst,
-    //         spi_if_awlock,
-    //         spi_if_awcache
-    //     };
-    // wire [AW_CHNL_W-1:0]o_axi_aw_chnl;
-    // wire                o_axi_aw_vld;
-    // wire                o_axi_aw_rdy;
-
-    // async_rst_fifo #(
-    //     .DP(1),
-    //     .DW(AW_CHNL_W)
-    // ) o_axi_aw_fifo(
-    //     .i_rdy(spi_if_awready),
-    //     .i_vld(spi_if_awvalid),
-    //     .i_dat(i_axi_aw_chnl),
-    //     .o_vld(o_axi_aw_vld),
-    //     .o_rdy(o_axi_aw_rdy),
-    //     .o_dat(o_axi_aw_chnl)
-    // );
-
-    // localparam  W_CHNL_W    =   DW + 1 + (DW>>3);
-
-    // wire [W_CHNL_W-1:0] i_axi_w_chnl    = {
-    //     spi_if_wdata,
-    //     spi_if_wlast,
-    //     spi_if_wstrb
-    // };
-
-    // wire [W_CHNL_W-1:0] o_axi_w_chnl;
-    // wire                o_axi_w_vld;
-    // wire                o_axi_w_rdy;
-
-    // async_rst_fifo #(
-    //     .DP(1),
-    //     .DW(W_CHNL_W)
-    // ) o_axi_w_fifo(
-    //     .i_rdy(spi_if_wready),
-    //     .i_vld(spi_if_wvalid),
-    //     .i_dat(i_axi_w_chnl),
-    //     .o_vld(o_axi_w_vld),
-    //     .o_rdy(o_axi_w_rdy),
-    //     .o_dat(o_axi_w_chnl)
-    // );
 
 
     wire            spi_flash_busy;
@@ -166,6 +112,7 @@ module spi_axi_if #(
     wire            spi_flash_sdi_en;
     wire            spi_flash_sdi_o;
     wire            spi_flash_sdi_i;
+    wire            spi_flash_sck;
 
 
 
@@ -221,7 +168,10 @@ module spi_axi_if #(
         .spi_flash_sdo_i(spi_flash_sdo_i),
         .spi_flash_sdi_en(spi_flash_sdi_en),
         .spi_flash_sdi_o(spi_flash_sdi_o),
-        .spi_flash_sdi_i(spi_flash_sdi_i)
+        .spi_flash_sdi_i(spi_flash_sdi_i),
+        .spi_flash_sck(spi_flash_sck),
+
+        .spi_flash_busy(spi_flash_busy)
     );
 
 
@@ -252,14 +202,7 @@ module spi_axi_if #(
     dfflr #(1)  spi_flash_awchnl_dfflr(spi_flash_awchnl_ena, spi_flash_awchnl_nxt, spi_flash_awchnl_r, clk, rst_n);
 
     
-    //record which write transaction have gone to spi flash.
-    // wire [IDW-1:0]  spi_flash_wid_r;
-    // wire [IDW-1:0]  spi_flash_wid_nxt;
-    // wire            spi_flash_wid_ena;
 
-    // assign          spi_flash_wid_nxt   =   spi_flash_awid;
-    // assign          spi_flash_wid_ena   =   spi_flash_awvalid & spi_flash_awready;
-    // dfflr #(IDW)    spi_flash_wid_dfflr(spi_flash_wid_ena, spi_flash_wid_nxt, spi_flash_wid_r, clk, rst_n);
 
     assign          spi_flash_wdata     =   spi_if_wdata;
     assign          spi_flash_wstrb     =   spi_if_wstrb;
@@ -272,14 +215,7 @@ module spi_axi_if #(
 
 
 
-    //record which read transaction have gone to spi flash.
-    // wire [IDW-1:0]  spi_flash_rid_r;
-    // wire [IDW-1:0]  spi_flash_rid_nxt;
-    // wire            spi_flash_rid_ena;
 
-    // assign          spi_flash_rid_nxt   =   spi_flash_arid;
-    // assign          spi_flash_rid_ena   =   spi_flash_arvalid & spi_flash_arready;
-    // dfflr #(IDW)    spi_flash_rid_dfflr(spi_flash_rid_ena, spi_flash_rid_nxt, spi_flash_rid_r, clk, rst_n);
 
     assign          spi_flash_arid      =   spi_if_arid;
     assign          spi_flash_araddr    =   spi_if_araddr;
@@ -321,9 +257,60 @@ module spi_axi_if #(
     wire            qspi_if_req_read;
     wire [7:0]      qspi_if_req_dat;
 
+
     wire            qspi_if_rsp_vld;
     wire            qspi_if_rsp_rdy;
     wire [7:0]      qspi_if_rsp_dat;
+
+    wire            qspi_if_switch_qspi;
+
+    wire            qspi_if_sck;
+    wire            qspi_if_csn;
+    wire            qspi_if_dq0_en;
+    wire            qspi_if_dq0_o;
+    wire            qspi_if_dq0_i;
+    wire            qspi_if_dq1_en;
+    wire            qspi_if_dq1_o;
+    wire            qspi_if_dq1_i;
+    wire            qspi_if_dq2_en;
+    wire            qspi_if_dq2_o;
+    wire            qspi_if_dq2_i;
+    wire            qspi_if_dq3_en;
+    wire            qspi_if_dq3_o;
+    wire            qspi_if_dq3_i;
+
+
+    qspi_wrap qspi_if(
+        .qspi_if_req_vld(qspi_if_req_vld),
+        .qspi_if_req_rdy(qspi_if_req_rdy),
+        .qspi_if_req_addr(qspi_if_req_addr),
+        .qspi_if_req_read(qspi_if_req_read),
+        .qspi_if_req_dat(qspi_if_req_dat),
+
+        .qspi_if_rsp_vld(qspi_if_rsp_vld),
+        .qspi_if_rsp_rdy(qspi_if_rsp_rdy),
+        .qspi_if_rsp_dat(qspi_if_rsp_dat),
+
+        .qspi_if_switch_qspi(qspi_if_switch_qspi),
+
+        .qspi_if_sck(qspi_if_sck),
+        .qspi_if_csn(qspi_if_csn),
+        .qspi_if_dq0_en(qspi_if_dq0_en),
+        .qspi_if_dq0_o(qspi_if_dq0_o),
+        .qspi_if_dq0_i(qspi_if_dq0_i),
+        .qspi_if_dq1_en(qspi_if_dq1_en),
+        .qspi_if_dq1_o(qspi_if_dq1_o),
+        .qspi_if_dq1_i(qspi_if_dq1_i),
+        .qspi_if_dq2_en(qspi_if_dq2_en),
+        .qspi_if_dq2_o(qspi_if_dq2_o),
+        .qspi_if_dq2_i(qspi_if_dq2_i),
+        .qspi_if_dq3_en(qspi_if_dq3_en),
+        .qspi_if_dq3_o(qspi_if_dq3_o),
+        .qspi_if_dq3_i(qspi_if_dq3_i),
+
+        .clk(aclk),
+        .rst_n(aresetn)
+    );
 
     assign          qspi_if_req_vld     =   ~spi_flash_busy & (spi_if_awvalid & aw_hit_qspi & spi_if_wvalid | spi_if_arvalid & ar_hit_qspi);
     assign          qspi_if_req_addr    =   spi_if_awvalid & aw_hit_qspi & spi_if_wvalid ? spi_if_awaddr[2:0] : spi_if_araddr[2:0];
@@ -349,24 +336,10 @@ module spi_axi_if #(
     assign          qspi_if_rsp_rdy     =   qspi_read_r & ~spi_flash_rvalid & spi_if_rready
                                         |   ~qspi_read_r& ~spi_flash_bvalid & spi_if_bready;
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     assign          spi_if_awready      =   ~aw_hit_qspi ? spi_flash_awready : spi_if_wvalid & spi_if_awvalid & qspi_if_req_rdy;
-    assign          spi_if_wready       =   spi_flash_awchnl_r ? spi_flash_awready : spi_if_wvalid & spi_if_awvalid & qspi_if_req_rdy;
+    assign          spi_if_wready       =   spi_flash_awchnl_r ? spi_flash_wready : spi_if_wvalid & spi_if_awvalid & qspi_if_req_rdy;
 
     assign          spi_if_bid          =   spi_flash_awchnl_r ? spi_flash_bid : qspi_id_r;
     assign          spi_if_bresp        =   spi_flash_awchnl_r ? spi_flash_bresp : 2'b00;
@@ -376,7 +349,46 @@ module spi_axi_if #(
 
     assign          spi_if_rvalid       =   spi_flash_rvalid | qspi_if_rsp_vld & qspi_read_r;
     assign          spi_if_rid          =   spi_flash_rvalid ? spi_flash_rid : qspi_id_r;
-    assign          spi_if_rdata        =   spi_flash_rvalid ? spi_flash_rdata:{{{DW-8}{1'b0}},qspi_if_rsp_dat} << qspi_addr_r;
+    assign          spi_if_rdata        =   spi_flash_rvalid ? spi_flash_rdata:{{DW-8{1'b0}},qspi_if_rsp_dat} << qspi_addr_r;
     assign          spi_if_rresp        =   spi_flash_rvalid ? spi_flash_rresp: 2'b00;
     assign          spi_if_rlast        =   spi_flash_rvalid ? spi_flash_rlast: 1'b1;
+
+
+
+    assign          spi_if_csn_en[0]    =   qspi_if_switch_qspi ? 1'b1 : spi_flash_csen[0];
+    assign          spi_if_csn_o[0]     =   qspi_if_switch_qspi ? qspi_if_csn : spi_flash_csn_o[0];
+
+    assign          spi_if_csn_en[1]    =   spi_flash_csen[1];
+    assign          spi_if_csn_o[1]     =   spi_flash_csn_o[1];
+
+    assign          spi_if_csn_en[2]    =   qspi_if_switch_qspi ? qspi_if_dq2_en : spi_flash_csen[2];
+    assign          spi_if_csn_o[2]     =   qspi_if_switch_qspi ? qspi_if_dq2_o  : spi_flash_csn_o[2];
+    
+    assign          spi_if_csn_en[3]    =   qspi_if_switch_qspi ? qspi_if_dq3_en : spi_flash_csen[3];
+    assign          spi_if_csn_o[3]     =   qspi_if_switch_qspi ? qspi_if_dq3_o  : spi_flash_csn_o[3];
+
+    assign          spi_if_sdi_en       =   qspi_if_switch_qspi ? qspi_if_dq0_en : spi_flash_sdi_en;
+    assign          spi_if_sdi_o        =   qspi_if_switch_qspi ? qspi_if_dq0_o  : spi_flash_sdi_o;
+
+    assign          spi_if_sdo_en       =   qspi_if_switch_qspi ? qspi_if_dq1_en : spi_flash_sdo_en;
+    assign          spi_if_sdo_o        =   qspi_if_switch_qspi ? qspi_if_dq1_o  : spi_flash_sdo_o;
+
+    assign          spi_flash_csn_i     =   spi_if_csn_i;
+
+    assign          qspi_if_dq0_i       =   spi_if_sdi_i;
+
+    assign          qspi_if_dq1_i       =   spi_if_sdo_i;
+
+    assign          qspi_if_dq2_i       =   spi_if_csn_i[2];
+    
+    assign          qspi_if_dq3_i       =   spi_if_csn_i[3];
+
+    assign          spi_if_sck          =   qspi_if_switch_qspi ? qspi_if_sck     : spi_flash_sck;
+
+    assign          spi_flash_rready    =   spi_if_rready & ~qspi_if_switch_qspi;
+
+    assign          spi_flash_sdi_i     =   spi_if_sdi_i;
+
+    assign          spi_flash_sdo_i     =   spi_if_sdo_i;
+
 endmodule
