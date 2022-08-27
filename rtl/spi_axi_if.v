@@ -2,7 +2,7 @@ module spi_axi_if #(
     parameter DW = 128,
     parameter AW = 32,
     parameter IDW = 6,
-    parameter QSPI_HADDR =   24'h1fff02
+    parameter QSPI_HADDR =   24'h1fff03
 )(
     input               aclk,
     input               aresetn,
@@ -224,6 +224,14 @@ module spi_axi_if #(
     assign          spi_flash_arburst   =   spi_if_arburst;
     assign          spi_flash_arvalid   =   spi_if_arvalid;
 
+    wire            qspi_if_req_vld;
+    wire            qspi_if_req_rdy;
+    wire [3:0]      qspi_if_req_addr;
+    wire            qspi_if_req_read;
+    wire [7:0]      qspi_if_req_dat;
+
+
+
     wire [IDW-1:0]  qspi_id_r;
     wire [IDW-1:0]  qspi_id_nxt;
     wire            qspi_id_ena;
@@ -233,14 +241,14 @@ module spi_axi_if #(
                                         |   {IDW{~qspi_if_req_read}}& spi_if_awid;
     dfflr #(IDW)    qspi_id_dfflr(qspi_id_ena, qspi_id_nxt, qspi_id_r, clk, rst_n);
 
-    wire [2:0]      qspi_addr_r;
-    wire [2:0]      qspi_addr_nxt;
+    wire [3:0]      qspi_addr_r;
+    wire [3:0]      qspi_addr_nxt;
     wire            qspi_addr_ena;
 
     assign          qspi_addr_ena       =   qspi_if_req_vld & qspi_if_req_rdy;
     assign          qspi_addr_nxt       =   qspi_if_req_addr;
 
-    dfflr #(3)      qspi_addr_dfflr(qspi_addr_ena, qspi_addr_nxt,qspi_addr_r, clk, rst_n);
+    dfflr #(4)      qspi_addr_dfflr(qspi_addr_ena, qspi_addr_nxt,qspi_addr_r, clk, rst_n);
 
     wire            qspi_read_r;
     wire            qspi_read_nxt;
@@ -251,11 +259,6 @@ module spi_axi_if #(
     dfflr #(1)  qspi_read_dfflr(qspi_read_ena, qspi_read_nxt, qspi_read_r, clk, rst_n);
 
 
-    wire            qspi_if_req_vld;
-    wire            qspi_if_req_rdy;
-    wire [2:0]      qspi_if_req_addr;
-    wire            qspi_if_req_read;
-    wire [7:0]      qspi_if_req_dat;
 
 
     wire            qspi_if_rsp_vld;
@@ -313,7 +316,7 @@ module spi_axi_if #(
     );
 
     assign          qspi_if_req_vld     =   ~spi_flash_busy & (spi_if_awvalid & aw_hit_qspi & spi_if_wvalid | spi_if_arvalid & ar_hit_qspi);
-    assign          qspi_if_req_addr    =   spi_if_awvalid & aw_hit_qspi & spi_if_wvalid ? spi_if_awaddr[2:0] : spi_if_araddr[2:0];
+    assign          qspi_if_req_addr    =   spi_if_awvalid & aw_hit_qspi & spi_if_wvalid ? byte_lane_idx : spi_if_araddr[3:0];
     assign          qspi_if_req_read    =   ~(spi_if_awvalid & aw_hit_qspi & spi_if_wvalid);
 
 

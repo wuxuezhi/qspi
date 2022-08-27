@@ -56,7 +56,7 @@ module spi_flash #(
     output          spi_flash_busy
 );
 
-
+    
 
 
     wire            clk                 =   spi_flash_aclk;
@@ -134,7 +134,7 @@ module spi_flash #(
     dfflr #(1)  spi_flash_buf_ar_vld_dfflr(spi_flash_buf_ar_vld_ena, spi_flash_buf_ar_vld_nxt, spi_flash_buf_ar_vld_r, clk, rst_n);
 
 
-    assign          spi_flash_busy      =   ~spi_flash_buf_aw_vld_r | ~spi_flash_buf_b_vld_r;
+    assign          spi_flash_busy      =   spi_flash_buf_aw_vld_r & spi_flash_buf_b_vld_r;
 
     assign          spi_flash_bid               =   spi_flash_buf_awid_r;
     assign          spi_flash_rid               =   spi_flash_buf_arid_r;

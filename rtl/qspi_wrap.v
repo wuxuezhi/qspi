@@ -1,7 +1,7 @@
 module qspi_wrap(
     input               qspi_if_req_vld,
     output              qspi_if_req_rdy,
-    input   [2:0]       qspi_if_req_addr,
+    input   [3:0]       qspi_if_req_addr,
     input               qspi_if_req_read,
     input   [7:0]       qspi_if_req_dat,
 
@@ -48,7 +48,7 @@ module qspi_wrap(
     assign              qspi_config1_nxt    =   qspi_if_req_dat;
 
     dfflr #(7)  qspi_config1_dfflr(qspi_config1_wen, {qspi_config1_nxt[7:4], qspi_config1_nxt[2:0]}, {qspi_config1_r[7:4], qspi_config1_r[2:0]}, clk, rst_n);
-    dfflr #(1)  qspi_config1_dfflrs(qspi_config1_wen, qspi_config1_nxt[3], qspi_config1_r[3], clk, rst_n);
+    dfflrs #(1) qspi_config1_dfflrs(qspi_config1_wen, qspi_config1_nxt[3], qspi_config1_r[3], clk, rst_n);
 
     wire    [7:0]       qspi_switch_r;
     wire    [7:0]       qspi_switch_nxt;
@@ -58,10 +58,10 @@ module qspi_wrap(
 
     dfflr #(8)  qspi_switch_dfflr(qspi_switch_wen, qspi_switch_nxt, qspi_switch_r, clk, rst_n);
 
-    wire    qspi_config0_sel    =   (qspi_if_req_addr == 3'b000);
-    wire    qspi_config1_sel    =   (qspi_if_req_addr == 3'b001);
-    wire    qspi_data_sel       =   (qspi_if_req_addr == 3'b010);
-    wire    qspi_switch_sel     =   (qspi_if_req_addr == 3'b011);
+    wire    qspi_config0_sel    =   (qspi_if_req_addr == 4'b0000);
+    wire    qspi_config1_sel    =   (qspi_if_req_addr == 4'b0001);
+    wire    qspi_data_sel       =   (qspi_if_req_addr == 4'b0010);
+    wire    qspi_switch_sel     =   (qspi_if_req_addr == 4'b0011);
 
     wire    qspi_if_req_hsked   =   qspi_if_req_vld & qspi_if_req_rdy;
 

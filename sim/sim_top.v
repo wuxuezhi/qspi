@@ -64,7 +64,8 @@ module sim_top();
     spi_axi_if #(
         .DW(DW),
         .IDW(IDW),
-        .AW(AW)
+        .AW(AW),
+        .QSPI_HADDR(24'h1fff03)
     ) uut_spi_axi_if(
         .aclk(aclk),
         .aresetn(aresetn),
@@ -118,6 +119,103 @@ module sim_top();
         .spi_if_sdi_o(spi_if_sdi_o),
         .spi_if_sdi_i(spi_if_sdi_i)
     );
+
+    initial begin
+        aresetn = 1'b0;
+ 
+
+        spi_if_awvalid  = 1'b0;
+        spi_if_awid     = 8'd24;
+        spi_if_awaddr   = 32'h1fff0300;
+        spi_if_awlen    = 8'd0;
+        spi_if_awsize   = 3'b000;
+        spi_if_awburst  = 2'b00;
+        spi_if_awlock   = 1'b0;
+        spi_if_awcache  = 0;
+        
+        spi_if_wvalid   = 1'b0;
+        spi_if_wdata    = 128'h00000000000000000000000001000000;
+        spi_if_wstrb    = 16'd8;
+        spi_if_wlast    = 1'b1;
+        
+        spi_if_bready   = 1'b0;
+
+        spi_if_arid     = 8'd25;
+        spi_if_araddr   = 32'd0;
+        spi_if_arlen    = 8'd0;
+        spi_if_arsize   = 3'd0;
+        spi_if_arburst  = 2'b00;
+        spi_if_arvalid  = 1'b0;
+
+        spi_if_rready   = 1'b0;
+        #200;
+        aresetn         = 1'b1;
+        #200;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_bready   = 1'b1;
+        
+        #40;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        #400;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wstrb    = 16'd2;
+        spi_if_wdata    = 128'd0;
+        #40;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        #400;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wstrb    = 16'd4;
+        spi_if_wdata    = 128'h000000000000000000000000000b0000;
+        #40;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        #40;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wdata    = 128'h00000000000000000000000000ff0000;
+        #600;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid    = 1'b0;
+        #200;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wstrb    = 16'd1;
+        spi_if_wdata    = 128'd32;
+        #600;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        #40;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wstrb    = 16'd4;
+        spi_if_wdata    = 128'h00000000000000000000000000050000;
+        spi_if_sdi_i    = 1'b1;
+        spi_if_sdo_i    = 1'b1;
+        #40;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        #600;
+        spi_if_awvalid  = 1'b1;
+        spi_if_wvalid   = 1'b1;
+        spi_if_wstrb    = 16'd1;
+        spi_if_wdata    = 128'd0;
+        #600;
+        spi_if_awvalid  = 1'b0;
+        spi_if_wvalid   = 1'b0;
+        spi_if_arvalid  = 1'b1;
+        spi_if_araddr   = 32'h1fff0302;
+        spi_if_rready   = 1'b1;       
+        
+        
+        //SWITCH WIRTE 8'h01;
+
+    end
+
 
     always begin
         #20;
