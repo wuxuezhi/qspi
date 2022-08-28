@@ -110,7 +110,13 @@ module qspi (
     wire        qspi_state_is_transfer  =   (qspi_state_r == QSPI_STATE_TRANSF);
     wire        qspi_state_is_dummy     =   (qspi_state_r == QSPI_STATE_DUMMY);
 
+    wire        qspi_state_idle_ena;
+    wire        qspi_state_transfer_ena;
+    wire        qspi_state_dummy_ena;
 
+    wire [1:0]  qspi_state_transfer_nxt;
+    wire [1:0]  qspi_state_idle_nxt;
+    wire [1:0]  qspi_state_dummy_nxt;
 
 
 
@@ -131,10 +137,27 @@ module qspi (
 
     assign      bit_state_ena           =   div_counting_complete | qspi_state_is_idle;
     assign      bit_state_nxt           =   qspi_state_is_idle &(
-                                                                    ((qspi_param_mode == 2'b00) | (qspi_param_mode == 2'b11)) & SCK_LOW
-                                                                   |((qspi_param_mode == 2'b10) | (qspi_param_mode == 2'b01)) & SCK_HIGH)
-                                           |qspi_state_is_transfer  & ~bit_state_r
-                                           |qspi_state_is_dummy     & ~bit_state_r;     
+                                                                qspi_i_hsked ? (
+                                                                                     ((qspi_param_mode == 2'b00) | (qspi_param_mode == 2'b11)) & SCK_LOW
+                                                                                    |((qspi_param_mode == 2'b10) | (qspi_param_mode == 2'b01)) & SCK_HIGH
+                                                                                    ) : qspi_param_mode[1]
+                                                                    )
+                                           |qspi_state_is_transfer  & (
+                                                                        qspi_state_transfer_ena &(
+                                                                                                    (qspi_state_transfer_nxt == QSPI_STATE_IDLE)  & qspi_param_mode[1]
+                                                                                                   |(qspi_state_transfer_nxt == QSPI_STATE_TRANSF)& ~bit_state_r
+                                                                                                   |(qspi_state_transfer_nxt == QSPI_STATE_DUMMY) & ~bit_state_r
+                                                                                                    )
+                                                                       |~qspi_state_transfer_ena& ~bit_state_r
+                                                                        )
+                                           |qspi_state_is_dummy     & (
+                                                                        qspi_state_dummy_ena & (
+                                                                                                    (qspi_state_dummy_nxt == QSPI_STATE_IDLE)   & qspi_param_mode[1]
+                                                                                                   |(qspi_state_dummy_nxt == QSPI_STATE_TRANSF) & ~bit_state_r
+                                                                                                   |(qspi_state_dummy_nxt == QSPI_STATE_DUMMY)  & ~bit_state_r
+                                                                                                    )
+                                                                       |~qspi_state_dummy_ena & ~bit_state_r
+                                                                        );    
 
     dfflr #(1)  bit_state_dfflr(bit_state_ena, bit_state_nxt, bit_state_r, clk, rst_n);                                             
 
@@ -259,12 +282,12 @@ module qspi (
 
 
 
-    wire        qspi_state_idle_ena     =   qspi_state_is_idle & qspi_i_hsked;
-    wire        qspi_state_dummy_ena    =   qspi_state_is_dummy     &   (
+    assign      qspi_state_idle_ena     =   qspi_state_is_idle & qspi_i_hsked;
+    assign      qspi_state_dummy_ena    =   qspi_state_is_dummy     &   (
                                                                             ((qspi_param_mode == 2'b00) | (qspi_param_mode == 2'b11)) & bit_state_is_sck_high & bit_state_ena
                                                                         |   ((qspi_param_mode == 2'b01) | (qspi_param_mode == 2'b10)) & bit_state_is_sck_low  & bit_state_ena
                                                                             ) & (bit_count_r == qspi_buf_dat_r);
-    wire        qspi_state_transfer_ena =   qspi_state_is_transfer  & (
+    assign      qspi_state_transfer_ena =   qspi_state_is_transfer  & (
                                                                         (qspi_buf_type_r == 2'b00) & (//standard SPI
                                                                                                         ((qspi_param_mode == 2'b00) | (qspi_param_mode == 2'b11)) & bit_state_is_sck_high& bit_state_ena & (bit_count_r == 7)
                                                                                                     |   ((qspi_param_mode == 2'b01) | (qspi_param_mode == 2'b10)) & bit_state_is_sck_low & bit_state_ena & (bit_count_r == 7)
@@ -281,15 +304,15 @@ module qspi (
 
     assign      qspi_state_ena          =   qspi_state_idle_ena | qspi_state_dummy_ena | qspi_state_transfer_ena;
 
-    wire [1:0]  qspi_state_idle_nxt     =   qspi_dat_rx_vld_r & ~qspi_rsp_hsked ? QSPI_STATE_IDLE :
+    assign      qspi_state_idle_nxt     =   qspi_dat_rx_vld_r & ~qspi_rsp_hsked ? QSPI_STATE_IDLE :
                                                                                 i_qspi_dummy ? QSPI_STATE_DUMMY :
                                                                                                QSPI_STATE_TRANSF;
 
-    wire [1:0]  qspi_state_dummy_nxt    =   {2{qspi_i_hsked & i_qspi_dummy}} & QSPI_STATE_DUMMY
+    assign      qspi_state_dummy_nxt    =   {2{qspi_i_hsked & i_qspi_dummy}} & QSPI_STATE_DUMMY
                                         |   {2{qspi_i_hsked & ~i_qspi_dummy}}& QSPI_STATE_TRANSF
                                         |   {2{~qspi_i_hsked}}               & QSPI_STATE_IDLE;
 
-    wire [1:0]  qspi_state_transfer_nxt =   {2{qspi_i_hsked & i_qspi_dummy}} & QSPI_STATE_DUMMY
+    assign      qspi_state_transfer_nxt =   {2{qspi_i_hsked & i_qspi_dummy}} & QSPI_STATE_DUMMY
                                         |   {2{qspi_i_hsked & ~i_qspi_dummy}}& QSPI_STATE_TRANSF
                                         |   {2{~qspi_i_hsked}}               & QSPI_STATE_IDLE;     
 
