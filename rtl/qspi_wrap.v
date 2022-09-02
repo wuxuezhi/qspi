@@ -159,7 +159,7 @@ module qspi_wrap(
     );
 
     //for write/dummy/read register , we assert response at once;
-    assign  qspi_if_rsp_vld     =   qspi_read_tr_r ? qspi_rsp_vld : 1'b1;
+    assign  qspi_if_rsp_vld     =   qspi_read_tr_r ? qspi_rsp_vld : qspi_if_req_vld & qspi_if_req_rdy;
 
     assign  qspi_rsp_rdy        =   qspi_if_rsp_rdy;
 

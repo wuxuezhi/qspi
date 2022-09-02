@@ -48,7 +48,6 @@ module spi_axi_if #(
 
     output[3:0]         spi_if_csn_en,
     output[3:0]         spi_if_csn_o,
-    input [3:0]         spi_if_csn_i,
 
     output              spi_if_sdo_en,
     output              spi_if_sdo_o,
@@ -56,7 +55,15 @@ module spi_axi_if #(
 
     output              spi_if_sdi_en,
     output              spi_if_sdi_o,
-    input               spi_if_sdi_i
+    input               spi_if_sdi_i,
+
+    output              spi_if_holdn_en,
+    output              spi_if_holdn_o,
+    input               spi_if_holdn_i,
+
+    output              spi_if_wpn_en,
+    output              spi_if_wpn_o,
+    input               spi_if_wpn_i
 
 );
 
@@ -105,7 +112,6 @@ module spi_axi_if #(
 
     wire [3:0]      spi_flash_csen;
     wire [3:0]      spi_flash_csn_o;
-    wire [3:0]      spi_flash_csn_i;
     wire            spi_flash_sdo_en;
     wire            spi_flash_sdo_o;
     wire            spi_flash_sdo_i;
@@ -113,6 +119,12 @@ module spi_axi_if #(
     wire            spi_flash_sdi_o;
     wire            spi_flash_sdi_i;
     wire            spi_flash_sck;
+    wire            spi_flash_hold_en;
+    wire            spi_flash_hold_o;
+    wire            spi_flash_hold_i;
+    wire            spi_flash_wpn_en;
+    wire            spi_flash_wpn_o;
+    wire            spi_flash_wpn_i;
 
 
 
@@ -162,7 +174,6 @@ module spi_axi_if #(
         
         .spi_flash_csen(spi_flash_csen),
         .spi_flash_csn_o(spi_flash_csn_o),
-        .spi_flash_csn_i(spi_flash_csn_i),
         .spi_flash_sdo_en(spi_flash_sdo_en),
         .spi_flash_sdo_o(spi_flash_sdo_o),
         .spi_flash_sdo_i(spi_flash_sdo_i),
@@ -170,6 +181,12 @@ module spi_axi_if #(
         .spi_flash_sdi_o(spi_flash_sdi_o),
         .spi_flash_sdi_i(spi_flash_sdi_i),
         .spi_flash_sck(spi_flash_sck),
+        .spi_flash_hold_en(spi_flash_hold_en),
+        .spi_flash_hold_o(spi_flash_hold_o),
+        .spi_flash_hold_i(spi_flash_hold_i),
+        .spi_flash_wpn_en(spi_flash_wpn_en),
+        .spi_flash_wpn_o(spi_flash_wpn_o),
+        .spi_flash_wpn_i(spi_flash_wpn_i),
 
         .spi_flash_busy(spi_flash_busy)
     );
@@ -364,11 +381,11 @@ module spi_axi_if #(
     assign          spi_if_csn_en[1]    =   spi_flash_csen[1];
     assign          spi_if_csn_o[1]     =   spi_flash_csn_o[1];
 
-    assign          spi_if_csn_en[2]    =   qspi_if_switch_qspi ? qspi_if_dq2_en : spi_flash_csen[2];
-    assign          spi_if_csn_o[2]     =   qspi_if_switch_qspi ? qspi_if_dq2_o  : spi_flash_csn_o[2];
+    assign          spi_if_csn_en[2]    =   spi_flash_csen[2];
+    assign          spi_if_csn_o[2]     =   spi_flash_csn_o[2];
     
-    assign          spi_if_csn_en[3]    =   qspi_if_switch_qspi ? qspi_if_dq3_en : spi_flash_csen[3];
-    assign          spi_if_csn_o[3]     =   qspi_if_switch_qspi ? qspi_if_dq3_o  : spi_flash_csn_o[3];
+    assign          spi_if_csn_en[3]    =   spi_flash_csen[3];
+    assign          spi_if_csn_o[3]     =   spi_flash_csn_o[3];
 
     assign          spi_if_sdi_en       =   qspi_if_switch_qspi ? qspi_if_dq0_en : spi_flash_sdi_en;
     assign          spi_if_sdi_o        =   qspi_if_switch_qspi ? qspi_if_dq0_o  : spi_flash_sdi_o;
@@ -376,15 +393,14 @@ module spi_axi_if #(
     assign          spi_if_sdo_en       =   qspi_if_switch_qspi ? qspi_if_dq1_en : spi_flash_sdo_en;
     assign          spi_if_sdo_o        =   qspi_if_switch_qspi ? qspi_if_dq1_o  : spi_flash_sdo_o;
 
-    assign          spi_flash_csn_i     =   spi_if_csn_i;
 
     assign          qspi_if_dq0_i       =   spi_if_sdi_i;
 
     assign          qspi_if_dq1_i       =   spi_if_sdo_i;
 
-    assign          qspi_if_dq2_i       =   spi_if_csn_i[2];
+    assign          qspi_if_dq2_i       =   spi_if_wpn_i;
     
-    assign          qspi_if_dq3_i       =   spi_if_csn_i[3];
+    assign          qspi_if_dq3_i       =   spi_if_holdn_i;
 
     assign          spi_if_sck          =   qspi_if_switch_qspi ? qspi_if_sck     : spi_flash_sck;
 
@@ -393,5 +409,19 @@ module spi_axi_if #(
     assign          spi_flash_sdi_i     =   spi_if_sdi_i;
 
     assign          spi_flash_sdo_i     =   spi_if_sdo_i;
+
+    assign          spi_flash_hold_i    =   spi_if_holdn_i;
+
+    assign          spi_flash_wpn_i     =   spi_if_wpn_i;
+
+    assign          spi_if_wpn_o        =   qspi_if_switch_qspi ? qspi_if_dq2_o : spi_flash_wpn_o;
+
+    assign          spi_if_wpn_en       =   qspi_if_switch_qspi ? qspi_if_dq2_en: spi_flash_wpn_en;
+
+    assign          spi_if_holdn_o      =   qspi_if_switch_qspi ? qspi_if_dq3_o : spi_flash_hold_o;
+
+    assign          spi_if_holdn_en     =   qspi_if_switch_qspi ? qspi_if_dq3_en: spi_flash_hold_en;
+
+
 
 endmodule

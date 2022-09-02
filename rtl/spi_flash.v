@@ -44,7 +44,6 @@ module spi_flash #(
 
     output[3:0]     spi_flash_csen,
     output[3:0]     spi_flash_csn_o,
-    input [3:0]     spi_flash_csn_i,
     output          spi_flash_sdo_en,
     output          spi_flash_sdo_o,
     input           spi_flash_sdo_i,
@@ -52,6 +51,12 @@ module spi_flash #(
     output          spi_flash_sdi_o,
     input           spi_flash_sdi_i,
     output          spi_flash_sck,
+    output          spi_flash_hold_en,
+    output          spi_flash_hold_o,
+    input           spi_flash_hold_i,
+    output          spi_flash_wpn_en,
+    output          spi_flash_wpn_o,
+    input           spi_flash_wpn_i,
 
     output          spi_flash_busy
 );
