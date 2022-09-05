@@ -58,7 +58,8 @@ module spi_flash #(
     output          spi_flash_wpn_o,
     input           spi_flash_wpn_i,
 
-    output          spi_flash_busy
+    output          spi_flash_busy,
+    output          spi_flash_reg_switch_qspi
 );
 
     
