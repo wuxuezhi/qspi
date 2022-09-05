@@ -339,15 +339,15 @@ module qspi (
     assign      qspi_dq1_o              =   (qspi_buf_type_r == 2'b01) & |(qspi_buf_dat_r & qspi_bit_idx)
                                         |   (qspi_buf_type_r == 2'b10) & |(qspi_buf_dat_r & (qspi_bit_idx >> 2));
 
-    assign      qspi_dq1_en             =   qspi_state_is_transfer & (qspi_buf_type_r != 2'b00);
+    assign      qspi_dq1_en             =   qspi_state_is_transfer & (qspi_buf_type_r != 2'b00) & qspi_buf_we_r;
 
     assign      qspi_dq2_o              =   |(qspi_buf_dat_r & (qspi_bit_idx >> 1));
 
-    assign      qspi_dq2_en             =   qspi_state_is_transfer & (qspi_buf_type_r == 2'b10);
+    assign      qspi_dq2_en             =   qspi_state_is_transfer & (qspi_buf_type_r == 2'b10) & qspi_buf_we_r;
 
     assign      qspi_dq3_o              =   |(qspi_buf_dat_r & qspi_bit_idx);
     
-    assign      qspi_dq3_en             =   qspi_state_is_transfer & (qspi_buf_type_r == 2'b10);
+    assign      qspi_dq3_en             =   qspi_state_is_transfer & (qspi_buf_type_r == 2'b10) & qspi_buf_we_r;
 
     assign      qspi_busy               =   (qspi_state_r != QSPI_STATE_IDLE);
 

@@ -53,3 +53,10 @@
 |:-------:|:----:|:----------:|:-------:|:------:|
 |7：1|Reserved| - | - | -|
 |0|Switch|0:切换为0号SPI控制器； 1：切换为QSPI| 0| R/W|
+
+# Register Space Switch
+# Register space switch Register(bias + 0xf)
+|Bit Field| Name | Description| Default |Property|
+|:-------:|:----:|:----------:|:-------:|:------:|
+|7：1|Reserved| - | - | -|
+|0|Rssr |0:切换为0号SPI flash ctrl Register space； 1：切换为QSPI Register space| 0| R/W|

@@ -1,8 +1,7 @@
-module spi_axi_if #(
+module spi_axi_if2 #(
     parameter DW = 128,
     parameter AW = 32,
-    parameter IDW = 6,
-    parameter QSPI_HADDR =   24'h1fff03
+    parameter IDW = 6
 )(
     input               aclk,
     input               aresetn,
@@ -71,9 +70,29 @@ module spi_axi_if #(
     wire                clk                 =   aclk;//alias
     wire                rst_n               =   aresetn;
 
+    wire                aw_w_vld_sync       =   spi_if_awvalid & spi_if_wvalid;
+
+    wire [AW-1:0]          if_wreq_addr;
+    wire [$clog2(DW>>3)-1:0]    byte_lane_idx;
+    onehot_encoder #(DW>>3) byte_lane_enc(spi_if_wstrb, byte_lane_idx);
+
+    wire [7:0]  byte_lane[(DW>>3)-1:0];
+
+    genvar i;
+    generate
+        for(i=0;i < (DW>>3); i=i+1) begin
+            assign  byte_lane[i]        =   {8{spi_if_wstrb[i]}} & spi_if_wdata[i*8+7:i*8];
+        end
+    endgenerate
+    
+
+    assign              if_wreq_addr        =   {spi_if_awaddr[AW-1:$clog2(DW>>3)], byte_lane_idx};
+
+    wire [AW-1:0]       if_rreq_addr        =   spi_if_araddr;
 
 
-    wire            spi_flash_busy;
+
+
     wire [IDW-1:0]  spi_flash_awid;
     wire [AW-1:0]   spi_flash_awaddr;
     wire [7:0]      spi_flash_awlen;
@@ -125,6 +144,8 @@ module spi_axi_if #(
     wire            spi_flash_wpn_en;
     wire            spi_flash_wpn_o;
     wire            spi_flash_wpn_i;
+    wire            spi_flash_busy;
+    wire            spi_flash_reg_switch_qspi;
 
 
 
@@ -187,96 +208,19 @@ module spi_axi_if #(
         .spi_flash_wpn_en(spi_flash_wpn_en),
         .spi_flash_wpn_o(spi_flash_wpn_o),
         .spi_flash_wpn_i(spi_flash_wpn_i),
+        .spi_flash_busy(spi_flash_busy),
 
-        .spi_flash_busy(spi_flash_busy)
+        .spi_flash_reg_switch_qspi(spi_flash_reg_switch_qspi)
     );
 
 
-
-    wire            aw_hit_qspi         =   (spi_if_awaddr[AW-1:8] == QSPI_HADDR);
-    wire            ar_hit_qspi         =   (spi_if_araddr[AW-1:8] == QSPI_HADDR);
-
-    //SPI FLASH
-    assign          spi_flash_awaddr    =   spi_if_awaddr;
-    assign          spi_flash_awid      =   spi_if_awid;
-    assign          spi_flash_awlen     =   spi_if_awlen;
-    assign          spi_flash_awsize    =   spi_if_awsize;
-    assign          spi_flash_awburst   =   spi_if_awburst;
-    assign          spi_flash_awlock    =   spi_if_awlock;
-    assign          spi_flash_awcache   =   spi_if_awcache;
-    assign          spi_flash_awvalid   =   spi_if_awvalid & ~aw_hit_qspi;
-
-    wire            spi_flash_awchnl_r;
-    wire            spi_flash_awchnl_nxt;
-    wire            spi_flash_awchnl_set;
-    wire            spi_flash_awchnl_clr;
-    wire            spi_flash_awchnl_ena;
     
-    assign          spi_flash_awchnl_set=   spi_flash_awvalid & spi_flash_awready;
-    assign          spi_flash_awchnl_clr=   spi_flash_bvalid  & spi_flash_bready;
-    assign          spi_flash_awchnl_ena=   spi_flash_awchnl_set | spi_flash_awchnl_clr;
-    assign          spi_flash_awchnl_nxt=   spi_flash_awchnl_set |~spi_flash_awchnl_clr;
-    dfflr #(1)  spi_flash_awchnl_dfflr(spi_flash_awchnl_ena, spi_flash_awchnl_nxt, spi_flash_awchnl_r, clk, rst_n);
-
-    
-
-
-    assign          spi_flash_wdata     =   spi_if_wdata;
-    assign          spi_flash_wstrb     =   spi_if_wstrb;
-    assign          spi_flash_wlast     =   spi_if_wlast;
-    assign          spi_flash_wvalid    =   spi_flash_awchnl_r & spi_if_wvalid;
-
-    assign          spi_flash_bready    =   spi_if_bready;
-
-    
-
-
-
-
-
-    assign          spi_flash_arid      =   spi_if_arid;
-    assign          spi_flash_araddr    =   spi_if_araddr;
-    assign          spi_flash_arlen     =   spi_if_arlen;
-    assign          spi_flash_arsize    =   spi_if_arsize;
-    assign          spi_flash_arburst   =   spi_if_arburst;
-    assign          spi_flash_arvalid   =   spi_if_arvalid;
 
     wire            qspi_if_req_vld;
     wire            qspi_if_req_rdy;
     wire [3:0]      qspi_if_req_addr;
     wire            qspi_if_req_read;
     wire [7:0]      qspi_if_req_dat;
-
-
-
-    wire [IDW-1:0]  qspi_id_r;
-    wire [IDW-1:0]  qspi_id_nxt;
-    wire            qspi_id_ena;
-    
-    assign          qspi_id_ena         =   qspi_if_req_vld & qspi_if_req_rdy;
-    assign          qspi_id_nxt         =   {IDW{qspi_if_req_read}} & spi_if_arid
-                                        |   {IDW{~qspi_if_req_read}}& spi_if_awid;
-    dfflr #(IDW)    qspi_id_dfflr(qspi_id_ena, qspi_id_nxt, qspi_id_r, clk, rst_n);
-
-    wire [3:0]      qspi_addr_r;
-    wire [3:0]      qspi_addr_nxt;
-    wire            qspi_addr_ena;
-
-    assign          qspi_addr_ena       =   qspi_if_req_vld & qspi_if_req_rdy;
-    assign          qspi_addr_nxt       =   qspi_if_req_addr;
-
-    dfflr #(4)      qspi_addr_dfflr(qspi_addr_ena, qspi_addr_nxt,qspi_addr_r, clk, rst_n);
-
-    wire            qspi_read_r;
-    wire            qspi_read_nxt;
-    wire            qspi_read_ena;
-
-    assign          qspi_read_ena       =   qspi_if_req_vld & qspi_if_req_rdy;
-    assign          qspi_read_nxt       =   qspi_if_req_read;
-    dfflr #(1)  qspi_read_dfflr(qspi_read_ena, qspi_read_nxt, qspi_read_r, clk, rst_n);
-
-
-
 
     wire            qspi_if_rsp_vld;
     wire            qspi_if_rsp_rdy;
@@ -298,7 +242,6 @@ module spi_axi_if #(
     wire            qspi_if_dq3_en;
     wire            qspi_if_dq3_o;
     wire            qspi_if_dq3_i;
-
 
     qspi_wrap qspi_if(
         .qspi_if_req_vld(qspi_if_req_vld),
@@ -332,46 +275,108 @@ module spi_axi_if #(
         .rst_n(aresetn)
     );
 
-    assign          qspi_if_req_vld     =   ~spi_flash_busy & (spi_if_awvalid & aw_hit_qspi & spi_if_wvalid | spi_if_arvalid & ar_hit_qspi);
-    assign          qspi_if_req_addr    =   spi_if_awvalid & aw_hit_qspi & spi_if_wvalid ? byte_lane_idx : spi_if_araddr[3:0];
-    assign          qspi_if_req_read    =   ~(spi_if_awvalid & aw_hit_qspi & spi_if_wvalid);
+
+
+    wire [IDW-1:0]  qspi_id_r;
+    wire [IDW-1:0]  qspi_id_nxt;
+    wire            qspi_id_ena;
+    
+    assign          qspi_id_ena         =   qspi_if_req_vld & qspi_if_req_rdy;
+    assign          qspi_id_nxt         =   {IDW{qspi_if_req_read}} & spi_if_arid
+                                        |   {IDW{~qspi_if_req_read}}& spi_if_awid;
+    dfflr #(IDW)    qspi_id_dfflr(qspi_id_ena, qspi_id_nxt, qspi_id_r, clk, rst_n);
+
+    wire [3:0]      qspi_addr_r;
+    wire [3:0]      qspi_addr_nxt;
+    wire            qspi_addr_ena;
+
+    assign          qspi_addr_ena       =   qspi_if_req_vld & qspi_if_req_rdy;
+    assign          qspi_addr_nxt       =   qspi_if_req_addr;
+
+    dfflr #(4)      qspi_addr_dfflr(qspi_addr_ena, qspi_addr_nxt, qspi_addr_r, clk, rst_n);
+
+    wire            qspi_read_r;
+    wire            qspi_read_nxt;
+    wire            qspi_read_ena;
+
+    assign          qspi_read_ena       =   qspi_if_req_vld & qspi_if_req_rdy;
+    assign          qspi_read_nxt       =   qspi_if_req_read;
+    dfflr #(1)  qspi_read_dfflr(qspi_read_ena, qspi_read_nxt, qspi_read_r, clk, rst_n);
 
 
 
 
+    assign          spi_flash_awid      =   spi_if_awid;
+    assign          spi_flash_awaddr    =   spi_if_awaddr;
+    assign          spi_flash_awlen     =   spi_if_awlen;
+    assign          spi_flash_awsize    =   spi_if_awsize;
+    assign          spi_flash_awburst   =   spi_if_awburst;
+    assign          spi_flash_awlock    =   spi_if_awlock;
+    assign          spi_flash_awcache   =   spi_if_awcache;
+    assign          spi_flash_awvalid   =   aw_w_vld_sync & (
+                                                                ~spi_flash_reg_switch_qspi 
+                                                               |(if_wreq_addr[3:0] == 4'hf) 
+                                                               );
+    
+    assign          spi_flash_wdata     =   spi_if_wdata;
+    assign          spi_flash_wstrb     =   spi_if_wstrb;
+    assign          spi_flash_wlast     =   spi_if_wlast;
+    assign          spi_flash_wvalid    =   aw_w_vld_sync & (
+                                                                ~spi_flash_reg_switch_qspi
+                                                               |(if_wreq_addr[3:0] == 4'hf)
+                                                                );
+    assign          spi_flash_bready    =   spi_if_bready & ~spi_flash_reg_switch_qspi;
 
-    wire [7:0]  byte_lane[(DW>>3)-1:0];
+    assign          spi_flash_arid      =   spi_if_arid;
+    assign          spi_flash_araddr    =   if_rreq_addr;    
+    assign          spi_flash_arlen     =   spi_if_arlen;
+    assign          spi_flash_arsize    =   spi_if_arsize;
+    assign          spi_flash_arburst   =   spi_if_arburst;
+    assign          spi_flash_arvalid   =   spi_if_arvalid & (~spi_flash_reg_switch_qspi | (if_rreq_addr[3:0] == 4'hf));
 
-    genvar i;
-    generate
-        for(i=0;i < (DW>>3); i=i+1) begin
-            assign  byte_lane[i]        =   {8{spi_if_wstrb[i]}} & spi_if_wdata[i*8+7:i*8];
-        end
-    endgenerate
+    assign          spi_flash_rready    =   spi_if_rready & ~spi_flash_reg_switch_qspi;
 
-    wire [$clog2(DW>>3)-1:0]            byte_lane_idx;
-    onehot_encoder #(DW>>3) byte_lane_enc(spi_if_wstrb, byte_lane_idx);
+
+    assign          qspi_if_req_vld     =   (aw_w_vld_sync & (if_wreq_addr[3:0] != 4'hf) | spi_if_arvalid & (if_rreq_addr[3:0] != 4'hf)) & spi_flash_reg_switch_qspi;
+    assign          qspi_if_req_read    =   ~aw_w_vld_sync;
+
+    assign          qspi_if_req_addr    =   {4{qspi_if_req_read}} & if_rreq_addr[3:0]
+                                           |{4{~qspi_if_req_read}}& if_wreq_addr[3:0];
 
     assign          qspi_if_req_dat     =   byte_lane[byte_lane_idx];
     assign          qspi_if_rsp_rdy     =   qspi_read_r & ~spi_flash_rvalid & spi_if_rready
-                                        |   ~qspi_read_r& ~spi_flash_bvalid & spi_if_bready;
+                                           |qspi_read_r & ~spi_flash_bvalid & spi_if_bready;
 
+    assign          spi_if_awready      =   aw_w_vld_sync & (
+                                                                spi_flash_reg_switch_qspi & qspi_if_req_rdy & ~spi_flash_busy
+                                                               |~spi_flash_reg_switch_qspi& spi_flash_awready
+                                                                );
+    assign          spi_if_wready       =   aw_w_vld_sync & (
+                                                                spi_flash_reg_switch_qspi & qspi_if_req_rdy & ~spi_flash_busy
+                                                               |~spi_flash_reg_switch_qspi& spi_flash_wready
+                                                                );
+    assign          spi_if_bid          =   {IDW{spi_flash_reg_switch_qspi}} & qspi_id_r
+                                           |{IDW{spi_flash_reg_switch_qspi}} & spi_flash_bid;
+    assign          spi_if_bresp        =   {2{spi_flash_reg_switch_qspi}} & 2'b00
+                                           |{2{~spi_flash_reg_switch_qspi}}& spi_flash_bresp;
+    assign          spi_if_bvalid       =   spi_flash_reg_switch_qspi & qspi_if_rsp_vld
+                                           |~spi_flash_reg_switch_qspi& spi_flash_bvalid;
 
+    assign          spi_if_arready      =   spi_flash_reg_switch_qspi & qspi_if_req_rdy
+                                           |~spi_flash_reg_switch_qspi& spi_flash_arready;
 
-    assign          spi_if_awready      =   ~aw_hit_qspi ? spi_flash_awready : spi_if_wvalid & spi_if_awvalid & qspi_if_req_rdy;
-    assign          spi_if_wready       =   spi_flash_awchnl_r ? spi_flash_wready : spi_if_wvalid & spi_if_awvalid & qspi_if_req_rdy;
-
-    assign          spi_if_bid          =   spi_flash_awchnl_r ? spi_flash_bid : qspi_id_r;
-    assign          spi_if_bresp        =   spi_flash_awchnl_r ? spi_flash_bresp : 2'b00;
-    assign          spi_if_bvalid       =   spi_flash_awchnl_r ? spi_flash_bvalid:qspi_if_rsp_vld;
+    assign          spi_if_rvalid       =   spi_flash_reg_switch_qspi & qspi_if_rsp_vld & qspi_read_r
+                                           |~spi_flash_reg_switch_qspi& spi_flash_rvalid;
+    assign          spi_if_rid          =   {IDW{spi_flash_reg_switch_qspi}} & qspi_id_r
+                                           |{IDW{~spi_flash_reg_switch_qspi}}& spi_flash_rid;
+    assign          spi_if_rdata        =   {DW{spi_flash_reg_switch_qspi}} & ({{DW-8{1'b0}}, qspi_if_rsp_dat} << qspi_addr_r)
+                                           |{DW{~spi_flash_reg_switch_qspi}}& spi_flash_rdata;
+    assign          spi_if_rresp        =   {2{spi_flash_reg_switch_qspi}} & 2'b00
+                                           |{2{~spi_flash_reg_switch_qspi}}& spi_flash_rresp;
+    assign          spi_if_rlast        =   spi_flash_reg_switch_qspi & 1'b1
+                                           |~spi_flash_reg_switch_qspi& spi_flash_rlast;
     
-    assign          spi_if_arready      =   ~ar_hit_qspi ? spi_flash_arready : qspi_if_req_rdy;
 
-    assign          spi_if_rvalid       =   spi_flash_rvalid | qspi_if_rsp_vld & qspi_read_r;
-    assign          spi_if_rid          =   spi_flash_rvalid ? spi_flash_rid : qspi_id_r;
-    assign          spi_if_rdata        =   spi_flash_rvalid ? spi_flash_rdata:{{DW-8{1'b0}},qspi_if_rsp_dat} << qspi_addr_r;
-    assign          spi_if_rresp        =   spi_flash_rvalid ? spi_flash_rresp: 2'b00;
-    assign          spi_if_rlast        =   spi_flash_rvalid ? spi_flash_rlast: 1'b1;
 
 
 
@@ -421,7 +426,10 @@ module spi_axi_if #(
     assign          spi_if_holdn_o      =   qspi_if_switch_qspi ? qspi_if_dq3_o : spi_flash_hold_o;
 
     assign          spi_if_holdn_en     =   qspi_if_switch_qspi ? qspi_if_dq3_en: spi_flash_hold_en;
+                                                                                                                                       
 
 
 
-endmodule
+
+
+    endmodule
