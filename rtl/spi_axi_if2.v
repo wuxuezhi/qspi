@@ -1,4 +1,4 @@
-module spi_axi_if2 #(
+module spi_axi_if #(
     parameter DW = 128,
     parameter AW = 32,
     parameter IDW = 6
@@ -146,6 +146,8 @@ module spi_axi_if2 #(
     wire            spi_flash_wpn_i;
     wire            spi_flash_busy;
     wire            spi_flash_reg_switch_qspi;
+
+
 
 
 
@@ -345,7 +347,7 @@ module spi_axi_if2 #(
 
     assign          qspi_if_req_dat     =   byte_lane[byte_lane_idx];
     assign          qspi_if_rsp_rdy     =   qspi_read_r & ~spi_flash_rvalid & spi_if_rready
-                                           |qspi_read_r & ~spi_flash_bvalid & spi_if_bready;
+                                           |~qspi_read_r & ~spi_flash_bvalid & spi_if_bready;
 
     assign          spi_if_awready      =   aw_w_vld_sync & (
                                                                 spi_flash_reg_switch_qspi & qspi_if_req_rdy & ~spi_flash_busy

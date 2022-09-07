@@ -140,6 +140,17 @@ module spi_flash #(
     dfflr #(1)  spi_flash_buf_ar_vld_dfflr(spi_flash_buf_ar_vld_ena, spi_flash_buf_ar_vld_nxt, spi_flash_buf_ar_vld_r, clk, rst_n);
 
 
+    wire [7:0]      spi_flash_reg_switch_qspi_r;
+    wire [7:0]      spi_flash_reg_switch_qspi_nxt;
+    wire            spi_flash_reg_switch_qspi_wen;
+    
+
+
+    assign          spi_flash_reg_switch_qspi_nxt   =   spi_flash_wdata[DW-1:DW-8];
+    assign          spi_flash_reg_switch_qspi_wen   =   spi_flash_wstrb[(DW>>3)-1];
+    dfflr #(8)  spi_flash_reg_switch_qspi_dfflr(spi_flash_reg_switch_qspi_wen, spi_flash_reg_switch_qspi_nxt, spi_flash_reg_switch_qspi_r, clk, rst_n);
+
+    assign          spi_flash_reg_switch_qspi       =   spi_flash_reg_switch_qspi_r[0];
     assign          spi_flash_busy      =   spi_flash_buf_aw_vld_r & spi_flash_buf_b_vld_r;
 
     assign          spi_flash_bid               =   spi_flash_buf_awid_r;

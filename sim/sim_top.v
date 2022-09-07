@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module sim_top();
     localparam  IDW = 8;
     localparam  DW  = 128;
@@ -48,7 +49,6 @@ module sim_top();
 
     wire[3:0]       spi_if_csn_en;
     wire[3:0]       spi_if_csn_o;
-    reg [3:0]       spi_if_csn_i;
 
     wire            spi_if_sdo_en;
     wire            spi_if_sdo_o;
@@ -57,6 +57,16 @@ module sim_top();
     wire            spi_if_sdi_en;
     wire            spi_if_sdi_o;
     reg             spi_if_sdi_i;
+
+    wire            spi_if_holdn_en;
+    wire            spi_if_holdn_o;
+    reg             spi_if_holdn_i;
+
+    wire            spi_if_wpn_en;
+    wire            spi_if_wpn_o;
+    reg             spi_if_wpn_i;
+
+
 
 
 
@@ -109,7 +119,6 @@ module sim_top();
         .spi_if_sck(spi_if_sck),
         .spi_if_csn_en(spi_if_csn_en),
         .spi_if_csn_o(spi_if_csn_o),
-        .spi_if_csn_i(spi_if_csn_i),
 
         .spi_if_sdo_en(spi_if_sdo_en),
         .spi_if_sdo_o(spi_if_sdo_o),
@@ -117,7 +126,15 @@ module sim_top();
 
         .spi_if_sdi_en(spi_if_sdi_en),
         .spi_if_sdi_o(spi_if_sdi_o),
-        .spi_if_sdi_i(spi_if_sdi_i)
+        .spi_if_sdi_i(spi_if_sdi_i),
+
+        .spi_if_holdn_en(spi_if_holdn_en),
+        .spi_if_holdn_o(spi_if_holdn_o),
+        .spi_if_holdn_i(spi_if_holdn_i),
+
+        .spi_if_wpn_en(spi_if_wpn_en),
+        .spi_if_wpn_o(spi_if_wpn_o),
+        .spi_if_wpn_i(spi_if_wpn_i)
     );
 
     initial begin
@@ -134,8 +151,8 @@ module sim_top();
         spi_if_awcache  = 0;
         
         spi_if_wvalid   = 1'b0;
-        spi_if_wdata    = 128'h00000000000000000000000001000000;
-        spi_if_wstrb    = 16'd8;
+        spi_if_wdata    = 128'h80000000000000000000000000000000;
+        spi_if_wstrb    = 16'h8000;
         spi_if_wlast    = 1'b1;
         
         spi_if_bready   = 1'b0;
@@ -150,10 +167,21 @@ module sim_top();
         spi_if_rready   = 1'b0;
         #200;
         aresetn         = 1'b1;
+	spi_if_awvalid	= 1'b1;
+	spi_if_wvalid	= 1'b1;
+	spi_if_bready	= 1'b1;
+	#40;
+	spi_if_awvalid	= 1'b0;
+	spi_if_wvalid	= 1'b0;
+
+
+
         #200;
         spi_if_awvalid  = 1'b1;
         spi_if_wvalid   = 1'b1;
         spi_if_bready   = 1'b1;
+	spi_if_wdata	= 128'h00000000000000000000000001000000;
+	spi_if_wstrb	= 16'd8;
         
         #40;
         spi_if_awvalid  = 1'b0;
