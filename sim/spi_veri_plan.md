@@ -107,6 +107,21 @@ switch register space & switch spi interface to QSPI
     addi    t3, t3, 0x1
     bne     t3, t1, PROG
     
+# simple SPI verification COMMAND list
+## INIT config
+    addi    t0, r0, 0x1fe00000
+    addi    t1, r0, 0x40
+    st.b    t1, t0, 0x0     // set spe zero
+    addi    t1, r0, 0xc0
+    st.b    t1, t0, 0x1
+    addi    t1, t0, 0x40    // set spe 1
+
+
+
+
+    simple_spi_wbyte:
+    
+
 
 
 
